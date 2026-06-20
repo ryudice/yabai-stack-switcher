@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Derived version: $VERSION (from tag $TAG)"
+
+      - name: Stamp version into Info.plist
+        run: |
+          plutil -replace CFBundleShortVersionString -string "${{ steps.version.outputs.version }}" Info.plist
+          plutil -replace CFBundleVersion -string "${{ github.run_number }}" Info.plist
+          plutil -p Info.plist | grep -E "CFBundle(Short)?Version"
+
+      - name: Build & bundle
+        run: make bundle
+
+      - name: Create distributable zip
+        run: make zip
+
+      - name: Notarize (optional)
+        if: ${{ vars.ENABLE_NOTARIZATION == 'true' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          echo "Submitting zip for notarization..."
+          xcrun notarytool submit YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          echo "Stapling ticket to app bundle..."
+          xcrun stapler staple YabaiStackSwitcher.app
+          xcrun stapler verify YabaiStackSwitcher.app
+          echo "Re-zipping stapled bundle..."
+          rm -f YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip
+          make zip
+          echo "Notarization + stapling complete."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip
+
+      - name: Compute sha256
+        id: sha
+        run: |
+          SHA=$(shasum -a 256 "YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip" | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "sha256: $SHA"
+
+      - name: Bump Homebrew cask
+        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        env:
+          GH_USER: ${{ github.repository_owner }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.sha.outputs.sha256 }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="$GH_USER/homebrew-tap"
+          echo "Bumping cask in $REPO ..."
+          git clone "https://x-access-token:$TAP_TOKEN@github.com/$REPO.git" tap-repo
+          cd tap-repo
+          mkdir -p Casks
+          CASK="Casks/yabai-stack-switcher.rb"
+          # Replace version and sha256 in the cask file
+          if [ ! -f "$CASK" ]; then
+            echo "Cask file not found in tap repo — creating from source repo."
+            cp "$GITHUB_WORKSPACE/Casks/yabai-stack-switcher.rb" "$CASK"
+            # Replace placeholder GitHub user
+            sed -i '' "s/YOUR_GITHUB_USER/$GH_USER/g" "$CASK"
+          fi
+          plutil -replace version -string "$VERSION" "$CASK" 2>/dev/null || \
+            sed -i '' "s/version \".*\"/version \"$VERSION\"/" "$CASK"
+          sed -i '' "s/sha256 \".*\"/sha256 \"$SHA256\"/" "$CASK"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$CASK"
+          git commit -m "yabai-stack-switcher $VERSION" || exit 0
+          git push
+          echo "Cask bumped to $VERSION in $REPO"

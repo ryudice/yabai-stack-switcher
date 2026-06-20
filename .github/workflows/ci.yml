@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Bundle .app
+        run: make bundle
+
+      - name: Verify bundle
+        run: |
+          test -f YabaiStackSwitcher.app/Contents/MacOS/YabaiStackSwitcher
+          test -f YabaiStackSwitcher.app/Contents/Info.plist
+          echo "Bundle OK"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YabaiStackSwitcher-app
+          path: YabaiStackSwitcher.app
+          if-no-files-found: error

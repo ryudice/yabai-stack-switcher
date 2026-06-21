@@ -13,6 +13,8 @@ final class IconCell: NSView {
     private var isDragging = false
     private let dragThreshold: CGFloat = 4
     var onFocus: ((Int) -> Void)?
+    var onUnstack: ((Int) -> Void)?
+    var onClose: ((Int) -> Void)?
     var onDragBegin: (() -> Void)?
     var onDrag: ((CGFloat) -> Void)?
 
@@ -24,7 +26,7 @@ final class IconCell: NSView {
         self.image = NSRunningApplication(processIdentifier: pid_t(window.pid))?.icon
         super.init(frame: .zero)
         wantsLayer = true
-        toolTip = "\(window.app) — \(window.title)"
+        toolTip = "\(window.app) — \(window.title)\n  right-click: remove from stack\n  middle-click: close"
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -74,6 +76,16 @@ final class IconCell: NSView {
         if !wasDragging { onFocus?(windowId) }
     }
 
+    override func rightMouseDown(with event: NSEvent) {
+        onUnstack?(windowId)
+    }
+
+    override func otherMouseUp(with event: NSEvent) {
+        if event.buttonNumber == 2 {
+            onClose?(windowId)
+        }
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         let rect = bounds.insetBy(dx: 2, dy: 2)
         let path = NSBezierPath(roundedRect: rect, xRadius: 7, yRadius: 7)
@@ -115,6 +127,8 @@ final class SwitcherBarView: NSView {
     private let spacing: CGFloat = 4
     private let cellSize: CGFloat = 30
     var onFocus: ((Int) -> Void)?
+    var onUnstack: ((Int) -> Void)?
+    var onClose: ((Int) -> Void)?
     var onDragBegin: (() -> Void)?
     var onDrag: ((CGFloat) -> Void)?
 
@@ -132,6 +146,8 @@ final class SwitcherBarView: NSView {
             cells = stack.windows.map { w in
                 let cell = IconCell(window: w, isFocused: stack.focusedWindowId == w.id)
                 cell.onFocus = { [weak self] id in self?.onFocus?(id) }
+                cell.onUnstack = { [weak self] id in self?.onUnstack?(id) }
+                cell.onClose = { [weak self] id in self?.onClose?(id) }
                 cell.onDragBegin = { [weak self] in self?.onDragBegin?() }
                 cell.onDrag = { [weak self] dx in self?.onDrag?(dx) }
                 addSubview(cell)
@@ -181,9 +197,11 @@ final class SwitcherPanel {
     let barView: SwitcherBarView
     let stackKey: String
     var onFocus: ((Int) -> Void)?
+    var onUnstack: ((Int) -> Void)?
+    var onClose: ((Int) -> Void)?
 
-    private let offsetX: CGFloat = 6
-    private let offsetY: CGFloat = 6
+    private var offsetX: CGFloat { AppSettings.barOffsetX }
+    private var offsetY: CGFloat { AppSettings.barOffsetY }
     private var userDX: CGFloat = 0
     private var lastBaseX: CGFloat = 0
     private var dragStartX: CGFloat = 0
@@ -212,6 +230,8 @@ final class SwitcherPanel {
         self.panel = p
 
         bar.onFocus = { [weak self] id in self?.onFocus?(id) }
+        bar.onUnstack = { [weak self] id in self?.onUnstack?(id) }
+        bar.onClose = { [weak self] id in self?.onClose?(id) }
         bar.onDragBegin = { [weak self] in self?.beginDrag() }
         bar.onDrag = { [weak self] dx in self?.applyDrag(dx: dx) }
         position(stack: stack, displays: displays, screens: screens)

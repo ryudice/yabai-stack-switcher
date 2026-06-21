@@ -7,12 +7,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let stackMode = StackModeOverlay()
     private var panels: [String: SwitcherPanel] = [:]
     private var savedMouseModifier: String?
+    private var statusBar: StatusBarController!
+    private let settingsWindow = SettingsWindowController()
+    private var lastStacks: [Stack] = []
+    private var lastDisplays: [YabaiDisplay] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Make Shift the yabai move modifier so a single Shift-drag both moves the
         // window and arms Create Stack Mode. The previous value is restored on quit.
         savedMouseModifier = client.configGet("mouse_modifier")
         client.configSet("mouse_modifier", "shift")
+
+        statusBar = StatusBarController(
+            onSettings: { [weak self] in self?.settingsWindow.show() },
+            onQuit: { NSApp.terminate(nil) }
+        )
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(settingsDidChange),
+            name: AppSettings.didChangeNotification, object: nil)
 
         watcher = StackWatcher(client: client)
         watcher.onChange = { [weak self] stacks, displays in
@@ -54,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let screens = NSScreen.screens
         let keys = Set(stacks.map(\.key))
 
+        lastStacks = stacks
+        lastDisplays = displays
+
         for (k, p) in panels where !keys.contains(k) {
             p.hide()
             panels.removeValue(forKey: k)
@@ -65,10 +81,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 let p = SwitcherPanel(stack: stack, displays: displays, screens: screens)
                 p.onFocus = { [weak self] id in self?.client.focus(windowId: id) }
+                p.onUnstack = { [weak self] id in self?.client.unstack(windowId: id) }
+                p.onClose = { [weak self] id in self?.client.close(windowId: id) }
                 panels[stack.key] = p
             }
             let panel = panels[stack.key]!
             if stack.isOnVisibleSpace { panel.show() } else { panel.hide() }
         }
+    }
+
+    @objc private func settingsDidChange() {
+        guard !lastStacks.isEmpty else { return }
+        updatePanels(stacks: lastStacks, displays: lastDisplays)
     }
 }

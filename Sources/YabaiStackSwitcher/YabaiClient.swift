@@ -61,6 +61,12 @@ final class YabaiClient {
         return try JSONDecoder().decode([YabaiDisplay].self, from: Data(raw.utf8))
     }
 
+    func querySpaces() throws -> [YabaiSpace] {
+        let raw = try run(["-m", "query", "--spaces"])
+        guard !raw.isEmpty else { return [] }
+        return try JSONDecoder().decode([YabaiSpace].self, from: Data(raw.utf8))
+    }
+
     func focus(windowId: Int) {
         guard let url = yabaiURL else { return }
         DispatchQueue.global(qos: .userInitiated).async {
@@ -85,6 +91,93 @@ final class YabaiClient {
             try? p.run()
             p.waitUntilExit()
         }
+    }
+
+    func close(windowId: Int) {
+        guard let url = yabaiURL else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let p = Process()
+            p.executableURL = url
+            p.arguments = ["-m", "window", "--close", String(windowId)]
+            p.standardOutput = Pipe()
+            p.standardError = Pipe()
+            try? p.run()
+            p.waitUntilExit()
+        }
+    }
+
+    func unstack(windowId: Int) {
+        guard yabaiURL != nil else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            guard let windows = try? self.queryWindows(),
+                  let target = windows.first(where: { $0.id == windowId }) else { return }
+
+            let spaces = (try? self.querySpaces()) ?? []
+            let spaceType = spaces.first(where: { $0.index == target.space })?.type ?? "stack"
+
+            if spaceType == "bsp",
+               let sibling = windows.first(where: {
+                   $0.id != windowId && $0.space == target.space &&
+                   $0.stackIndex == 0 && !$0.isFloating && !$0.isMinimized && !$0.isHidden
+               }),
+               self.warpSync(windowId: windowId, targetId: sibling.id) {
+                return
+            }
+            let orig = target.frame
+            self.floatSync(windowId: windowId)
+            if spaceType == "stack" {
+                self.resizeAndCenterSync(windowId: windowId, within: orig)
+            }
+        }
+    }
+
+    @discardableResult
+    private func warpSync(windowId: Int, targetId: Int) -> Bool {
+        guard let url = yabaiURL else { return false }
+        let p = Process()
+        p.executableURL = url
+        p.arguments = ["-m", "window", String(windowId), "--warp", String(targetId)]
+        p.standardOutput = Pipe()
+        p.standardError = Pipe()
+        do { try p.run() } catch { return false }
+        p.waitUntilExit()
+        return p.terminationStatus == 0
+    }
+
+    private func floatSync(windowId: Int) {
+        guard let url = yabaiURL else { return }
+        let p = Process()
+        p.executableURL = url
+        p.arguments = ["-m", "window", String(windowId), "--toggle", "float"]
+        p.standardOutput = Pipe()
+        p.standardError = Pipe()
+        try? p.run()
+        p.waitUntilExit()
+    }
+
+    private func resizeAndCenterSync(windowId: Int, within frame: YabaiFrame) {
+        guard let url = yabaiURL else { return }
+        let newW = Int((frame.w * 0.5).rounded())
+        let newH = Int((frame.h * 0.5).rounded())
+        let newX = Int((frame.x + (frame.w * 0.25)).rounded())
+        let newY = Int((frame.y + (frame.h * 0.25)).rounded())
+
+        let resize = Process()
+        resize.executableURL = url
+        resize.arguments = ["-m", "window", String(windowId), "--resize", "abs:\(newW):\(newH)"]
+        resize.standardOutput = Pipe()
+        resize.standardError = Pipe()
+        try? resize.run()
+        resize.waitUntilExit()
+
+        let move = Process()
+        move.executableURL = url
+        move.arguments = ["-m", "window", String(windowId), "--move", "abs:\(newX):\(newY)"]
+        move.standardOutput = Pipe()
+        move.standardError = Pipe()
+        try? move.run()
+        move.waitUntilExit()
     }
 
     func configGet(_ key: String) -> String? {

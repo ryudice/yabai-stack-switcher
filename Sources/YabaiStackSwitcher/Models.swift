@@ -39,6 +39,15 @@ struct YabaiDisplay: Codable, Equatable {
     var frame: YabaiFrame
 }
 
+struct YabaiSpace: Codable, Equatable {
+    var id: Int
+    var index: Int
+    var label: String
+    var type: String
+    var display: Int
+    var windows: [Int]
+}
+
 struct Stack: Equatable {
     var key: String
     var space: Int

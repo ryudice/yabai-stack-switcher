@@ -17,6 +17,8 @@ final class IconCell: NSView {
     var onClose: ((Int) -> Void)?
     var onDragBegin: (() -> Void)?
     var onDrag: ((CGFloat) -> Void)?
+    var onHoverStart: ((Int, NSRect) -> Void)?
+    var onHoverEnd: (() -> Void)?
 
     init(window: YabaiWindow, isFocused: Bool) {
         self.windowId = window.id
@@ -48,8 +50,16 @@ final class IconCell: NSView {
         addCursorRect(bounds, cursor: .openHand)
     }
 
-    override func mouseEntered(with: NSEvent) { isHovered = true; needsDisplay = true }
-    override func mouseExited(with: NSEvent) { isHovered = false; needsDisplay = true }
+    override func mouseEntered(with: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+        onHoverStart?(windowId, self.frame)
+    }
+    override func mouseExited(with: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+        onHoverEnd?()
+    }
 
     override func mouseDown(with: NSEvent) {
         dragStart = NSEvent.mouseLocation
@@ -131,6 +141,8 @@ final class SwitcherBarView: NSView {
     var onClose: ((Int) -> Void)?
     var onDragBegin: (() -> Void)?
     var onDrag: ((CGFloat) -> Void)?
+    var onHoverStart: ((Int, NSRect) -> Void)?
+    var onHoverEnd: (() -> Void)?
 
     func sizeFor(count: Int) -> NSSize {
         let n = max(count, 1)
@@ -142,6 +154,7 @@ final class SwitcherBarView: NSView {
         let newIds = Set(stack.windowIds)
         let curIds = Set(cells.map(\.windowId))
         if newIds != curIds {
+            onHoverEnd?()
             cells.forEach { $0.removeFromSuperview() }
             cells = stack.windows.map { w in
                 let cell = IconCell(window: w, isFocused: stack.focusedWindowId == w.id)
@@ -150,6 +163,8 @@ final class SwitcherBarView: NSView {
                 cell.onClose = { [weak self] id in self?.onClose?(id) }
                 cell.onDragBegin = { [weak self] in self?.onDragBegin?() }
                 cell.onDrag = { [weak self] dx in self?.onDrag?(dx) }
+                cell.onHoverStart = { [weak self] id, frame in self?.onHoverStart?(id, frame) }
+                cell.onHoverEnd = { [weak self] in self?.onHoverEnd?() }
                 addSubview(cell)
                 return cell
             }
@@ -206,6 +221,7 @@ final class SwitcherPanel {
     private var lastBaseX: CGFloat = 0
     private var dragStartX: CGFloat = 0
     private var screenVisibleFrame: NSRect = .zero
+    private let preview = WindowPreviewPanel()
     init(stack: Stack, displays: [YabaiDisplay], screens: [NSScreen]) {
         self.stackKey = stack.key
         let bar = SwitcherBarView()
@@ -234,6 +250,10 @@ final class SwitcherPanel {
         bar.onClose = { [weak self] id in self?.onClose?(id) }
         bar.onDragBegin = { [weak self] in self?.beginDrag() }
         bar.onDrag = { [weak self] dx in self?.applyDrag(dx: dx) }
+        bar.onHoverStart = { [weak self] id, frame in
+            self?.handleHoverStart(windowId: id, cellFrameInBarCoords: frame)
+        }
+        bar.onHoverEnd = { [weak self] in self?.preview.hide() }
         position(stack: stack, displays: displays, screens: screens)
     }
 
@@ -244,6 +264,7 @@ final class SwitcherPanel {
 
     func hide() {
         guard panel.isVisible else { return }
+        preview.hide()
         panel.orderOut(nil)
     }
 
@@ -268,6 +289,12 @@ final class SwitcherPanel {
 
     private func beginDrag() {
         dragStartX = panel.frame.minX
+    }
+
+    private func handleHoverStart(windowId: Int, cellFrameInBarCoords: NSRect) {
+        let cellFrameInWindow = barView.convert(cellFrameInBarCoords, to: nil)
+        let cellFrameInScreen = panel.convertToScreen(cellFrameInWindow)
+        preview.scheduleShow(windowId: windowId, above: cellFrameInScreen)
     }
 
     private func applyDrag(dx: CGFloat) {

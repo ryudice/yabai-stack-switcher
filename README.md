@@ -16,6 +16,9 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 - **One icon per stacked window** — uses each app's own icon.
 - **Click to switch** — focus the window you clicked, instantly.
+- **Hover to preview** — rest the mouse on an icon and a live preview of that
+  window pops up above the bar so you can tell stacked windows apart before
+  clicking.
 - **Right-click to unstack** — pop a window out of its stack. On a `stack`-layout
   space the window is floated, resized to 50% of the stack area, and centered so
   it's obvious it was removed. On a `bsp`-layout space with a stack node, the

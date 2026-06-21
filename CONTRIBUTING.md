@@ -9,19 +9,28 @@ Yabai Stack Switcher is a pure-Swift, AppKit-only macOS accessory app (no
 third-party dependencies). It watches yabai for stacked windows and renders a
 floating, clickable icon bar at the top-left of each visible stack.
 
-The whole app is ~640 lines across seven files in
-`Sources/YabaiStackSwitcher/`:
+The app lives across these files:
 
 ```
 Sources/YabaiStackSwitcher/
-├── main.swift          # entry point — creates NSApplication, runs the app
-├── AppDelegate.swift   # wires watcher + signal notifier together, manages panels
-├── Models.swift        # Codable structs for yabai's JSON (windows, displays, stacks)
-├── YabaiClient.swift   # thin wrapper over the `yabai` CLI (query + focus)
-├── StackWatcher.swift  # polls yabai, groups windows into stacks, diffs state
-├── SignalNotifier.swift# registers yabai signals, receives SIGUSR1 pings
-└── SwitcherPanel.swift # the UI — NSPanel + SwitcherBarView + IconCell
+└── main.swift            # entry point — calls runYabaiStackSwitcher()
+Sources/YabaiStackSwitcherCore/
+├── AppMain.swift         # public runYabaiStackSwitcher() entry point
+├── AppDelegate.swift     # wires watcher + signal notifier together, manages panels
+├── Models.swift          # Codable structs for yabai's JSON (windows, displays, stacks)
+├── YabaiClient.swift     # thin wrapper over the `yabai` CLI (query + focus)
+├── StackWatcher.swift    # polls yabai, groups windows into stacks, diffs state
+├── SignalNotifier.swift  # registers yabai signals, receives SIGUSR1/SIGUSR2 pings
+├── DragWatcher.swift     # Shift-drag detection for Create Stack Mode
+├── StackModeOverlay.swift# the Create Stack Mode overlays + mode indicator
+└── SwitcherPanel.swift   # the UI — NSPanel + SwitcherBarView + IconCell
+Tests/YabaiStackSwitcherTests/
+└── …                     # unit tests (Models, groupStacks, coordinate conversion)
 ```
+
+The core logic is a library target (`YabaiStackSwitcherCore`) so the test
+target can import it; the executable target (`YabaiStackSwitcher`) is a thin
+wrapper that calls the public entry point.
 
 ### Architecture, at a glance
 
@@ -110,10 +119,14 @@ Switch to that space and the bar should appear at the top-left.
 ```sh
 swift build               # debug
 swift build -c release    # release
+swift test                # unit tests (YabaiStackSwitcherTests)
 ```
 
-There is no test suite yet — verification is manual (see below). When adding a
-feature, please test it against a live yabai stack.
+Unit tests cover `Models` decoding, `StackWatcher.groupStacks` grouping
+behavior, and the `SwitcherPanel` top-left coordinate conversion. When adding a
+feature that touches those areas, add or update a test alongside it. Other
+behavior is still verified manually (see below); please also test against a live
+yabai stack.
 
 ### Verifying changes
 
@@ -163,8 +176,10 @@ yabai -m query --windows | jq '[.[] | select(."stack-index" > 0) | {id, app, "st
 
 ## Areas ripe for contribution
 
-- **Tests.** A unit-test target for `StackWatcher.groupStacks` and the
-  coordinate conversion in `SwitcherPanel` would be a great first PR.
+- **Integration tests.** Unit tests cover `StackWatcher.groupStacks`, `Models`
+  decoding, and `SwitcherPanel` coordinate conversion. A great next PR would be
+  integration tests that drive `YabaiClient` against a stub `yabai` executable
+  (canned JSON fixtures) and exercise the full `StackWatcher.refresh` pipeline.
 - **Vertical drag / repositioning.** Currently horizontal-only; a vertical
   component with edge-snap could be useful.
 - **Scroll-to-cycle.** Scroll on the bar to cycle through the stack
@@ -234,7 +249,8 @@ brew install --cask yabai-stack-switcher
 ## Pull request checklist
 
 - [ ] `swift build -c release` succeeds with no warnings.
-- [ ] CI workflow passes (build + bundle on `macos-14`).
+- [ ] `swift test` passes.
+- [ ] CI workflow passes (test + build + bundle on `macos-14`).
 - [ ] Tested against a live yabai stack (see the verification checklist above).
 - [ ] No new third-party dependencies.
 - [ ] No new comments unless something is genuinely non-obvious.

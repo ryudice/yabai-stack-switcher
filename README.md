@@ -78,7 +78,8 @@ double-click.
 
 ## Start at login
 
-Add `YabaiStackSwitcher.app` to
+The Homebrew install automatically adds `YabaiStackSwitcher.app` to your login
+items. If you installed via the pre-built release instead, add it manually to
 **System Settings → General → Login Items & Extensions → Login Items**.
 
 ## Usage

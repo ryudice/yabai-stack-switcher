@@ -17,6 +17,11 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 - **Appears instantly** — driven by yabai signals, not polling, so the bar shows
   up ~120 ms after you switch to a stack's space.
 - **One bar per stack** — on every display, wherever you have stacks.
+- **Create Stack Mode** — hold **Shift** while dragging a yabai window to light up
+  a "Create Stack Mode" indicator and outline every other window on the space as a
+  drop target. The target under your cursor is emphasized with a center drop-zone
+  ring; release on a target's center and yabai stacks the windows. Works alongside
+  yabai's normal drag-to-swap (no Shift = swap as usual).
 - **Stays out of the way** — no Dock icon, never steals keyboard focus, and the
   bar background is click-through so you can still click the traffic-light
   buttons of the window underneath.
@@ -86,6 +91,23 @@ Add `YabaiStackSwitcher.app` to
 3. Click an icon to focus that window.
 4. Drag the bar horizontally to reposition it; the position persists while the
    app runs.
+
+### Create Stack Mode
+
+Hold **Shift** while you drag a yabai window to enter Create Stack Mode:
+
+1. Press and hold **Shift**, then drag a window with yabai's normal move modifier
+   (Option by default).
+2. A "Create Stack Mode" badge appears at the top of the screen and every other
+   window on the space is outlined as a drop target.
+3. The target under your cursor is emphasized and shows a center drop-zone ring —
+   that ring marks where yabai will accept a stack drop.
+4. Release the window over a target's center ring; yabai stacks the two windows.
+5. Release **Shift** (or stop dragging) and the overlays disappear.
+
+Stacking itself is handled by yabai's native drop-on-center behavior — the app
+only adds the visual mode and target highlighting. Without Shift, dragging
+behaves exactly as yabai normally does (swap, not stack).
 
 ### Stacking windows in yabai
 

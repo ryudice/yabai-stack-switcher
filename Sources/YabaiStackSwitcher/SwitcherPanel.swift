@@ -266,17 +266,25 @@ final class SwitcherPanel {
     }
 
     static func screen(for stack: Stack, displays: [YabaiDisplay], screens: [NSScreen]) -> NSScreen? {
-        (stack.display - 1 >= 0 && stack.display - 1 < screens.count)
-            ? screens[stack.display - 1] : screens.first
+        screen(forDisplay: stack.display, screens: screens)
+    }
+
+    static func screen(forDisplay display: Int, screens: [NSScreen]) -> NSScreen? {
+        (display - 1 >= 0 && display - 1 < screens.count)
+            ? screens[display - 1] : screens.first
     }
 
     static func topLeft(for stack: Stack, displays: [YabaiDisplay], screens: [NSScreen]) -> NSPoint? {
-        guard let disp = displays.first(where: { $0.index == stack.display }) ?? displays.first else { return nil }
-        let screen: NSScreen? = (stack.display - 1 >= 0 && stack.display - 1 < screens.count)
-            ? screens[stack.display - 1] : screens.first
+        topLeft(frame: stack.frame, display: stack.display, displays: displays, screens: screens)
+    }
+
+    static func topLeft(frame: YabaiFrame, display: Int, displays: [YabaiDisplay], screens: [NSScreen]) -> NSPoint? {
+        guard let disp = displays.first(where: { $0.index == display }) ?? displays.first else { return nil }
+        let screen: NSScreen? = (display - 1 >= 0 && display - 1 < screens.count)
+            ? screens[display - 1] : screens.first
         guard let scr = screen else { return nil }
-        let rx = stack.frame.x - disp.frame.x
-        let ry = stack.frame.y - disp.frame.y
+        let rx = frame.x - disp.frame.x
+        let ry = frame.y - disp.frame.y
         return NSPoint(x: scr.frame.minX + rx, y: scr.frame.maxY - ry)
     }
 }

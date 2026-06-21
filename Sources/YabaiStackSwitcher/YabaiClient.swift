@@ -50,6 +50,11 @@ final class YabaiClient {
         return try JSONDecoder().decode([YabaiWindow].self, from: Data(raw.utf8))
     }
 
+    func queryFocusedWindow() throws -> YabaiWindow {
+        let raw = try run(["-m", "query", "--windows", "--window"])
+        return try JSONDecoder().decode(YabaiWindow.self, from: Data(raw.utf8))
+    }
+
     func queryDisplays() throws -> [YabaiDisplay] {
         let raw = try run(["-m", "query", "--displays"])
         guard !raw.isEmpty else { return [] }
@@ -62,6 +67,47 @@ final class YabaiClient {
             let p = Process()
             p.executableURL = url
             p.arguments = ["-m", "window", "--focus", String(windowId)]
+            p.standardOutput = Pipe()
+            p.standardError = Pipe()
+            try? p.run()
+            p.waitUntilExit()
+        }
+    }
+
+    func stackOnto(targetWindowId: Int) {
+        guard let url = yabaiURL else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let p = Process()
+            p.executableURL = url
+            p.arguments = ["-m", "window", "--stack", String(targetWindowId)]
+            p.standardOutput = Pipe()
+            p.standardError = Pipe()
+            try? p.run()
+            p.waitUntilExit()
+        }
+    }
+
+    func configGet(_ key: String) -> String? {
+        guard let url = yabaiURL else { return nil }
+        let p = Process()
+        p.executableURL = url
+        p.arguments = ["-m", "config", key]
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = Pipe()
+        do { try p.run() } catch { return nil }
+        p.waitUntilExit()
+        guard p.terminationStatus == 0 else { return nil }
+        let raw = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func configSet(_ key: String, _ value: String) {
+        guard let url = yabaiURL else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let p = Process()
+            p.executableURL = url
+            p.arguments = ["-m", "config", key, value]
             p.standardOutput = Pipe()
             p.standardError = Pipe()
             try? p.run()

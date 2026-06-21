@@ -51,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onSignal: { [weak self] in self?.watcher.refreshDebounced() },
             onMove: { [weak self] in self?.dragWatcher.onMove() }
         )
+
+        promptLaunchAtLoginIfNeeded()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -93,5 +95,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func settingsDidChange() {
         guard !lastStacks.isEmpty else { return }
         updatePanels(stacks: lastStacks, displays: lastDisplays)
+    }
+
+    private func promptLaunchAtLoginIfNeeded() {
+        guard !AppSettings.hasPromptedLaunchAtLogin else { return }
+        AppSettings.hasPromptedLaunchAtLogin = true
+        let alert = NSAlert()
+        alert.messageText = "Launch Yabai Stack Switcher at login?"
+        alert.informativeText = "Open the stack switcher automatically when you log in so it's always available. You can change this later in Settings."
+        alert.addButton(withTitle: "Add to Login Items")
+        alert.addButton(withTitle: "Not Now")
+        alert.alertStyle = .informational
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            AppSettings.setLaunchAtLogin(true)
+        }
     }
 }

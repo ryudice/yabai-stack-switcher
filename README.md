@@ -16,6 +16,9 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 - **One icon per stacked window** — uses each app's own icon.
 - **Click to switch** — focus the window you clicked, instantly.
+- **Hover to preview** — rest the mouse on an icon and a live preview of that
+  window pops up above the bar so you can tell stacked windows apart before
+  clicking.
 - **Right-click to unstack** — pop a window out of its stack. On a `stack`-layout
   space the window is floated, resized to 50% of the stack area, and centered so
   it's obvious it was removed. On a `bsp`-layout space with a stack node, the
@@ -48,7 +51,7 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 ## Requirements
 
-- macOS 12 or later
+- macOS 13 or later
 - [yabai](https://github.com/koekeishiya/yabai) v7+ installed and running
 
 ## Install
@@ -75,7 +78,9 @@ double-click.
 
 ## Start at login
 
-Add `YabaiStackSwitcher.app` to
+On first launch the app asks whether to add itself to your login items. You
+can change this later via the menu bar icon → **Settings… → Startup → Launch
+at login**. If you prefer the manual route, add `YabaiStackSwitcher.app` to
 **System Settings → General → Login Items & Extensions → Login Items**.
 
 ## Usage
@@ -121,7 +126,8 @@ The app puts a small stack icon in the macOS menu bar. Click it for a context
 menu:
 
 - **Settings…** — adjust the bar's horizontal/vertical offset from the
-  stack's top-left corner. Values are remembered across launches.
+  stack's top-left corner, and the hover preview's max size (120–480 pt).
+  Values are remembered across launches.
 - **Quit Yabai Stack Switcher** — close the app (also bound to ⌘Q).
 
 <!-- TODO: replace with a screenshot of the menu bar icon and its context menu -->

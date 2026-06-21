@@ -1,14 +1,20 @@
 import Foundation
 import AppKit
+import ServiceManagement
 
 enum AppSettings {
     static let didChangeNotification = Notification.Name("yssSettingsDidChange")
 
     private static let barOffsetXKey = "barOffsetX"
     private static let barOffsetYKey = "barOffsetY"
+    private static let previewMaxDimKey = "previewMaxDim"
+    private static let hasPromptedLaunchAtLoginKey = "hasPromptedLaunchAtLogin"
 
     static let defaultBarOffsetX: CGFloat = 6
     static let defaultBarOffsetY: CGFloat = 6
+    static let defaultPreviewMaxDim: CGFloat = 240
+    static let minPreviewMaxDim: CGFloat = 120
+    static let maxPreviewMaxDim: CGFloat = 480
 
     static var barOffsetX: CGFloat {
         get {
@@ -36,9 +42,50 @@ enum AppSettings {
         }
     }
 
+    static var previewMaxDim: CGFloat {
+        get {
+            if let v = UserDefaults.standard.object(forKey: previewMaxDimKey) as? Double {
+                let clamped = max(minPreviewMaxDim, min(maxPreviewMaxDim, CGFloat(v)))
+                return clamped
+            }
+            return defaultPreviewMaxDim
+        }
+        set {
+            let clamped = max(minPreviewMaxDim, min(maxPreviewMaxDim, newValue))
+            UserDefaults.standard.set(Double(clamped), forKey: previewMaxDimKey)
+            postChange()
+        }
+    }
+
+    static var hasPromptedLaunchAtLogin: Bool {
+        get { UserDefaults.standard.bool(forKey: hasPromptedLaunchAtLoginKey) }
+        set { UserDefaults.standard.set(newValue, forKey: hasPromptedLaunchAtLoginKey) }
+    }
+
+    static var isLaunchAtLoginEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    @discardableResult
+    static func setLaunchAtLogin(_ enabled: Bool) -> Bool {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            postChange()
+            return true
+        } catch {
+            postChange()
+            return false
+        }
+    }
+
     static func resetToDefaults() {
         UserDefaults.standard.removeObject(forKey: barOffsetXKey)
         UserDefaults.standard.removeObject(forKey: barOffsetYKey)
+        UserDefaults.standard.removeObject(forKey: previewMaxDimKey)
         postChange()
     }
 

@@ -124,7 +124,8 @@ The app puts a small stack icon in the macOS menu bar. Click it for a context
 menu:
 
 - **Settings…** — adjust the bar's horizontal/vertical offset from the
-  stack's top-left corner. Values are remembered across launches.
+  stack's top-left corner, and the hover preview's max size (120–480 pt).
+  Values are remembered across launches.
 - **Quit Yabai Stack Switcher** — close the app (also bound to ⌘Q).
 
 <!-- TODO: replace with a screenshot of the menu bar icon and its context menu -->

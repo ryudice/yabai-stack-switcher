@@ -6,9 +6,11 @@ final class SettingsWindowController {
     private var yOffsetSlider: NSSlider!
     private var xOffsetField: NSTextField!
     private var yOffsetField: NSTextField!
+    private var previewSizeSlider: NSSlider!
+    private var previewSizeField: NSTextField!
 
     init() {
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 180))
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 240))
         let w = NSWindow(contentRect: content.bounds,
                          styleMask: [.titled, .closable, .miniaturizable],
                          backing: .buffered, defer: false)
@@ -44,12 +46,22 @@ final class SettingsWindowController {
                            field: &yOffsetSlider,
                            valueField: &yOffsetField)
 
+        let previewLabel = NSTextField(labelWithString: "Window preview")
+        previewLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+
+        let previewRow = makeRow(label: "Max size",
+                                 min: Double(AppSettings.minPreviewMaxDim),
+                                 max: Double(AppSettings.maxPreviewMaxDim),
+                                 sliderAction: #selector(previewSizeSliderChanged),
+                                 field: &previewSizeSlider,
+                                 valueField: &previewSizeField)
+
         let resetButton = NSButton(title: "Reset to Defaults",
                                     target: self,
                                     action: #selector(resetToDefaults))
         resetButton.bezelStyle = .rounded
 
-        let stack = NSStackView(views: [offsetLabel, xRow, yRow, resetButton])
+        let stack = NSStackView(views: [offsetLabel, xRow, yRow, previewLabel, previewRow, resetButton])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 12
@@ -62,7 +74,8 @@ final class SettingsWindowController {
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
             xRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            yRow.widthAnchor.constraint(equalTo: stack.widthAnchor)
+            yRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            previewRow.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
     }
 
@@ -109,6 +122,12 @@ final class SettingsWindowController {
         AppSettings.barOffsetY = CGFloat(v)
     }
 
+    @objc private func previewSizeSliderChanged() {
+        let v = previewSizeSlider.doubleValue
+        previewSizeField.stringValue = String(Int(v))
+        AppSettings.previewMaxDim = CGFloat(v)
+    }
+
     @objc private func resetToDefaults() {
         AppSettings.resetToDefaults()
         syncControlsFromSettings()
@@ -117,9 +136,12 @@ final class SettingsWindowController {
     private func syncControlsFromSettings() {
         let x = Double(AppSettings.barOffsetX)
         let y = Double(AppSettings.barOffsetY)
+        let p = Double(AppSettings.previewMaxDim)
         xOffsetSlider.doubleValue = x
         yOffsetSlider.doubleValue = y
+        previewSizeSlider.doubleValue = p
         xOffsetField.stringValue = String(Int(x.rounded()))
         yOffsetField.stringValue = String(Int(y.rounded()))
+        previewSizeField.stringValue = String(Int(p.rounded()))
     }
 }

@@ -8,7 +8,7 @@ final class WindowPreviewPanel {
     private let previewView: WindowPreviewView
     private var showWorkItem: DispatchWorkItem?
     private var shownWindowId: Int?
-    private let maxDim: CGFloat = 240
+    private var maxDim: CGFloat { AppSettings.previewMaxDim }
     private let showDelay: TimeInterval = 0.25
 
     init() {

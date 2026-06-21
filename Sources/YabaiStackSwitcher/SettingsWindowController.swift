@@ -8,9 +8,10 @@ final class SettingsWindowController {
     private var yOffsetField: NSTextField!
     private var previewSizeSlider: NSSlider!
     private var previewSizeField: NSTextField!
+    private var launchAtLoginCheckbox: NSButton!
 
     init() {
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 240))
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 310))
         let w = NSWindow(contentRect: content.bounds,
                          styleMask: [.titled, .closable, .miniaturizable],
                          backing: .buffered, defer: false)
@@ -56,12 +57,20 @@ final class SettingsWindowController {
                                  field: &previewSizeSlider,
                                  valueField: &previewSizeField)
 
+        let startupLabel = NSTextField(labelWithString: "Startup")
+        startupLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+
+        let launchCheckbox = NSButton(checkboxWithTitle: "Launch at login",
+                                      target: self,
+                                      action: #selector(launchAtLoginToggled))
+        self.launchAtLoginCheckbox = launchCheckbox
+
         let resetButton = NSButton(title: "Reset to Defaults",
                                     target: self,
                                     action: #selector(resetToDefaults))
         resetButton.bezelStyle = .rounded
 
-        let stack = NSStackView(views: [offsetLabel, xRow, yRow, previewLabel, previewRow, resetButton])
+        let stack = NSStackView(views: [offsetLabel, xRow, yRow, previewLabel, previewRow, startupLabel, launchCheckbox, resetButton])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 12
@@ -128,6 +137,12 @@ final class SettingsWindowController {
         AppSettings.previewMaxDim = CGFloat(v)
     }
 
+    @objc private func launchAtLoginToggled() {
+        let enabled = launchAtLoginCheckbox.state == .on
+        AppSettings.setLaunchAtLogin(enabled)
+        syncControlsFromSettings()
+    }
+
     @objc private func resetToDefaults() {
         AppSettings.resetToDefaults()
         syncControlsFromSettings()
@@ -143,5 +158,10 @@ final class SettingsWindowController {
         xOffsetField.stringValue = String(Int(x.rounded()))
         yOffsetField.stringValue = String(Int(y.rounded()))
         previewSizeField.stringValue = String(Int(p.rounded()))
+        if #available(macOS 13, *) {
+            launchAtLoginCheckbox.state = AppSettings.isLaunchAtLoginEnabled ? .on : .off
+        } else {
+            launchAtLoginCheckbox.state = UserDefaults.standard.bool(forKey: "launchAtLoginFallback") ? .on : .off
+        }
     }
 }

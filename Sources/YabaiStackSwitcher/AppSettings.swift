@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import ServiceManagement
 
 enum AppSettings {
     static let didChangeNotification = Notification.Name("yssSettingsDidChange")
@@ -7,6 +8,7 @@ enum AppSettings {
     private static let barOffsetXKey = "barOffsetX"
     private static let barOffsetYKey = "barOffsetY"
     private static let previewMaxDimKey = "previewMaxDim"
+    private static let hasPromptedLaunchAtLoginKey = "hasPromptedLaunchAtLogin"
 
     static let defaultBarOffsetX: CGFloat = 6
     static let defaultBarOffsetY: CGFloat = 6
@@ -53,6 +55,37 @@ enum AppSettings {
             UserDefaults.standard.set(Double(clamped), forKey: previewMaxDimKey)
             postChange()
         }
+    }
+
+    static var hasPromptedLaunchAtLogin: Bool {
+        get { UserDefaults.standard.bool(forKey: hasPromptedLaunchAtLoginKey) }
+        set { UserDefaults.standard.set(newValue, forKey: hasPromptedLaunchAtLoginKey) }
+    }
+
+    @available(macOS 13, *)
+    static var isLaunchAtLoginEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    @discardableResult
+    static func setLaunchAtLogin(_ enabled: Bool) -> Bool {
+        if #available(macOS 13, *) {
+            do {
+                if enabled {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+                postChange()
+                return true
+            } catch {
+                postChange()
+                return false
+            }
+        }
+        UserDefaults.standard.set(enabled, forKey: "launchAtLoginFallback")
+        postChange()
+        return false
     }
 
     static func resetToDefaults() {

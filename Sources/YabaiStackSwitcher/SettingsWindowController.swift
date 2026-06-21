@@ -158,10 +158,6 @@ final class SettingsWindowController {
         xOffsetField.stringValue = String(Int(x.rounded()))
         yOffsetField.stringValue = String(Int(y.rounded()))
         previewSizeField.stringValue = String(Int(p.rounded()))
-        if #available(macOS 13, *) {
-            launchAtLoginCheckbox.state = AppSettings.isLaunchAtLoginEnabled ? .on : .off
-        } else {
-            launchAtLoginCheckbox.state = UserDefaults.standard.bool(forKey: "launchAtLoginFallback") ? .on : .off
-        }
+        launchAtLoginCheckbox.state = AppSettings.isLaunchAtLoginEnabled ? .on : .off
     }
 }

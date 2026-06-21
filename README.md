@@ -51,7 +51,7 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 ## Requirements
 
-- macOS 12 or later
+- macOS 13 or later
 - [yabai](https://github.com/koekeishiya/yabai) v7+ installed and running
 
 ## Install

@@ -327,11 +327,15 @@ final class SwitcherPanel {
 
     static func topLeft(frame: YabaiFrame, display: Int, displays: [YabaiDisplay], screens: [NSScreen]) -> NSPoint? {
         guard let disp = displays.first(where: { $0.index == display }) ?? displays.first else { return nil }
-        let screen: NSScreen? = (display - 1 >= 0 && display - 1 < screens.count)
-            ? screens[display - 1] : screens.first
-        guard let scr = screen else { return nil }
-        let rx = frame.x - disp.frame.x
-        let ry = frame.y - disp.frame.y
-        return NSPoint(x: scr.frame.minX + rx, y: scr.frame.maxY - ry)
+        let screenFrame: NSRect? = (display - 1 >= 0 && display - 1 < screens.count)
+            ? screens[display - 1].frame : screens.first?.frame
+        guard let scr = screenFrame else { return nil }
+        return topLeftPoint(frame: frame, displayFrame: disp.frame, screenFrame: scr)
+    }
+
+    static func topLeftPoint(frame: YabaiFrame, displayFrame: YabaiFrame, screenFrame: NSRect) -> NSPoint {
+        let rx = frame.x - displayFrame.x
+        let ry = frame.y - displayFrame.y
+        return NSPoint(x: screenFrame.minX + rx, y: screenFrame.maxY - ry)
     }
 }

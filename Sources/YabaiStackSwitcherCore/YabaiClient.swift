@@ -12,6 +12,10 @@ final class YabaiClient {
         self.yabaiURL = Self.locate()
     }
 
+    init(yabaiURL: URL?) {
+        self.yabaiURL = yabaiURL
+    }
+
     static func locate() -> URL? {
         let candidates = ["/opt/homebrew/bin/yabai", "/usr/local/bin/yabai"]
         for c in candidates where FileManager.default.isExecutableFile(atPath: c) {

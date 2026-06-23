@@ -72,7 +72,7 @@ final class StackWatcher {
         }
     }
 
-    private func groupStacks(windows: [YabaiWindow]) -> [Stack] {
+    func groupStacks(windows: [YabaiWindow]) -> [Stack] {
         let stacked = windows.filter {
             $0.stackIndex > 0 && !$0.isMinimized && !$0.isHidden
         }

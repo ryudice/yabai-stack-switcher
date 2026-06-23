@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test
+        run: swift test
+
       - name: Build (release)
         run: swift build -c release
 

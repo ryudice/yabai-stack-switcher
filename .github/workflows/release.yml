@@ -75,7 +75,7 @@ jobs:
           echo "sha256: $SHA"
 
       - name: Bump Homebrew cask
-        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        if: ${{ env.TAP_TOKEN != '' }}
         env:
           GH_USER: ${{ github.repository_owner }}
           VERSION: ${{ steps.version.outputs.version }}

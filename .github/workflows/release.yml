@@ -81,7 +81,7 @@ jobs:
             --wait
           echo "Stapling ticket to app bundle..."
           xcrun stapler staple YabaiStackSwitcher.app
-          xcrun stapler verify YabaiStackSwitcher.app
+          xcrun stapler validate YabaiStackSwitcher.app
           echo "Re-zipping stapled bundle..."
           rm -f YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip
           ditto -c -k --keepParent YabaiStackSwitcher.app "YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip"

@@ -59,7 +59,7 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 ### Option A — Homebrew (recommended)
 
 ```sh
-brew tap YOUR_GITHUB_USER/tap
+brew tap ryudice/tap
 brew install --cask yabai-stack-switcher
 ```
 

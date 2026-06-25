@@ -216,12 +216,17 @@ variables and secrets:
 | Name | Type | Value |
 |------|------|-------|
 | `ENABLE_NOTARIZATION` | Variable | `true` |
+| `APPLE_DEVELOPER_ID` | Secret | Developer ID Application identity, e.g. `Developer ID Application: Roberto Yudice (GAW854MKDB)` |
+| `MACOS_CERTIFICATE` | Secret | base64-encoded `.p12` export of the Developer ID Application certificate |
+| `MACOS_CERTIFICATE_PWD` | Secret | password used when exporting the `.p12` |
 | `APPLE_ID` | Secret | your Apple ID email |
 | `APPLE_ID_PASSWORD` | Secret | app-specific password for notarytool |
 | `APPLE_TEAM_ID` | Secret | your Apple Developer Team ID |
 
-When enabled, the workflow submits the zip to Apple's notary service, staples
-the ticket to the `.app`, and re-zips the stapled bundle for distribution.
+When enabled, the workflow imports a Developer ID Application certificate into
+a temporary keychain, codesigns the `.app` with the hardened runtime, submits
+the zip to Apple's notary service, staples the ticket to the `.app`, and
+re-zips the stapled bundle for distribution.
 
 ### Homebrew tap (optional)
 

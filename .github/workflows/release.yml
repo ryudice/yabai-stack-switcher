@@ -33,8 +33,37 @@ jobs:
       - name: Build & bundle
         run: make bundle
 
+      - name: Import signing certificate
+        if: ${{ vars.ENABLE_NOTARIZATION == 'true' }}
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="yss-signing-$(date +%s).keychain-db"
+          KEYCHAIN_PWD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+          security import certificate.p12 -P "$MACOS_CERTIFICATE_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" "$KEYCHAIN"
+
+      - name: Codesign app
+        if: ${{ vars.ENABLE_NOTARIZATION == 'true' }}
+        env:
+          APPLE_DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          set -euo pipefail
+          codesign --deep --force --options runtime --sign "$APPLE_DEVELOPER_ID" YabaiStackSwitcher.app
+          codesign --verify --strict --verbose=2 YabaiStackSwitcher.app
+
       - name: Create distributable zip
-        run: make zip
+        run: |
+          rm -f "YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip"
+          ditto -c -k --keepParent YabaiStackSwitcher.app "YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip"
+          echo "Created YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip"
 
       - name: Notarize (optional)
         if: ${{ vars.ENABLE_NOTARIZATION == 'true' }}
@@ -55,7 +84,7 @@ jobs:
           xcrun stapler verify YabaiStackSwitcher.app
           echo "Re-zipping stapled bundle..."
           rm -f YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip
-          make zip
+          ditto -c -k --keepParent YabaiStackSwitcher.app "YabaiStackSwitcher-${{ steps.version.outputs.version }}.zip"
           echo "Notarization + stapling complete."
 
       - name: Create GitHub Release

@@ -9,8 +9,6 @@ cask "yabai-stack-switcher" do
   desc "Floating icon switcher for yabai stacked windows"
   homepage "https://github.com/YOUR_GITHUB_USER/yabai-stack-switcher"
 
-  depends_on formula: "yabai"
-
   app "YabaiStackSwitcher.app"
 
   zap trash: "~/Library/Preferences/com.yabai.stack-switcher.plist"

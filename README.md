@@ -7,7 +7,6 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 <p align="center"><em>The focused window is highlighted with an accent ring.</em></p>
 
-<!-- TODO: replace with an overview screenshot -->
 <p align="center">
   <img src="images/overview.png" alt="The stack switcher bar floating over a yabai stack" width="640" />
 </p>
@@ -28,10 +27,6 @@ top-left of the stack and can be dragged horizontally to wherever you like.
   you put it and stays clamped to the screen edges.
 - **Focused-window highlight** — an accent ring marks the current window.
 
-<!-- TODO: replace with a screenshot of the focused-window accent ring -->
-<p align="center">
-  <img src="images/focused-highlight.png" alt="Close-up of the accent ring on the focused window's icon" width="480" />
-</p>
 
 - **Appears instantly** — driven by yabai signals, not polling, so the bar shows
   up ~120 ms after you switch to a stack's space.
@@ -56,15 +51,13 @@ top-left of the stack and can be dragged horizontally to wherever you like.
 
 ## Install
 
-### Option A — Homebrew (recommended)
-
 ```sh
 brew tap ryudice/tap
 brew install --cask yabai-stack-switcher
 ```
 
-This also installs yabai if you don't have it (the cask declares it as a
-dependency). To upgrade later:
+yabai itself isn't installed by the cask — make sure it's running first (see
+[Requirements](#requirements)). To upgrade later:
 
 ```sh
 brew upgrade --cask yabai-stack-switcher
@@ -177,17 +170,6 @@ yabai -m window --focus stack.next   # cycle within a stack (keyboard)
 This app gives you a clickable alternative to the keyboard commands — and
 **right-clicking** an icon is the easy way to unstack a window without dropping
 to the terminal.
-
-## yabai signals
-
-On launch the app registers yabai signals (labelled `yss-*`) so it updates the
-moment windows change. These are automatically cleaned up when the app quits. If
-the app is force-killed, stale signals are reclaimed on the next launch. You can
-inspect them at any time:
-
-```sh
-yabai -m signal --list             # look for yss-* labels
-```
 
 ## Troubleshooting
 
